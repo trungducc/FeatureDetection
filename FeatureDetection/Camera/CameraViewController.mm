@@ -30,7 +30,8 @@
 // |renderTarget| must be initialized before calling this method.
 - (void)setupCamera;
 
-// Start the camera if permission granted or ask for permission if it's not determined.
+// Start the camera if permission granted or ask for permission if it's not determined. Does nothing
+// if camera is recording.
 - (void)startCameraIfNeeded;
 
 // Allows the user to go to Feature Detection's settings
@@ -113,9 +114,15 @@
     _camera.defaultFPS = 30;
     _camera.grayscaleMode = NO;
     _camera.delegate = self;
+    
+    [self startCameraIfNeeded];
 }
 
 - (void)startCameraIfNeeded {
+    if (_camera.recordVideo) {
+        return;
+    }
+    
     AVAuthorizationStatus authorizationStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
     if (authorizationStatus == AVAuthorizationStatusNotDetermined ||
         authorizationStatus == AVAuthorizationStatusAuthorized) {
