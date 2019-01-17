@@ -14,7 +14,7 @@
 @interface CameraViewController () <CvVideoCameraDelegate>
 
 // The view which is displayed while camera permission is denied. Gives user chance to go to
-// setting and turn the permission on directly from application. By default, it's hidden.
+// setting and turn the permission on directly from application.
 @property (nonatomic, strong) UIView *askForPermissionView;
 
 // The view presents live preview of the camera.
@@ -30,6 +30,12 @@
 // |renderTarget| must be initialized before calling this method.
 - (void)setupCamera;
 
+// Start the camera if permission granted or ask for permission if it's not determined.
+- (void)startCameraIfNeeded;
+
+// Allows the user to go to Feature Detection's settings
+- (void)openSettings;
+
 @end
 
 @implementation CameraViewController
@@ -44,19 +50,59 @@
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
-    [_camera start];
+    [self startCameraIfNeeded];
 }
 
 - (void)setupSubviews {
-    _askForPermissionView = [[UIImageView alloc] initWithFrame:self.view.frame];
-    _askForPermissionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    // Initilazes subviews
+
+    _askForPermissionView = [[UIView alloc] initWithFrame:self.view.frame];
+    _askForPermissionView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:_askForPermissionView];
     
-    _askForPermissionView.hidden = YES;
+    UILabel *askForPermissionTitleLabel = [[UILabel alloc] init];
+    askForPermissionTitleLabel.textColor = [UIColor whiteColor];
+    askForPermissionTitleLabel.text = @"Feature Detection";
+    askForPermissionTitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    askForPermissionTitleLabel.font = [UIFont boldSystemFontOfSize:20.f];
+    [_askForPermissionView addSubview:askForPermissionTitleLabel];
+    
+    UILabel *askForPermissionDescriptionLabel = [[UILabel alloc] init];
+    askForPermissionDescriptionLabel.textColor = [UIColor lightGrayColor];
+    askForPermissionDescriptionLabel.textAlignment = NSTextAlignmentCenter;
+    askForPermissionDescriptionLabel.numberOfLines = 2;
+    askForPermissionDescriptionLabel.text = @"Enable access so you can start detect features.";
+    askForPermissionDescriptionLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    askForPermissionDescriptionLabel.font = [UIFont systemFontOfSize:15.f];
+    [_askForPermissionView addSubview:askForPermissionDescriptionLabel];
+    
+    UIButton *enableCameraAccessButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [enableCameraAccessButton setTitle:@"Enable Camera Access" forState:UIControlStateNormal];
+    [enableCameraAccessButton addTarget:self action:@selector(openSettings) forControlEvents:UIControlEventTouchUpInside];
+    enableCameraAccessButton.translatesAutoresizingMaskIntoConstraints = NO;
+    enableCameraAccessButton.titleLabel.font = [UIFont systemFontOfSize:17.f];
+    [_askForPermissionView addSubview:enableCameraAccessButton];
     
     _renderTarget = [[UIImageView alloc] initWithFrame:self.view.frame];
     _renderTarget.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_renderTarget];
+    
+    // Update constraints
+
+    [_askForPermissionView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor].active = YES;
+    [_askForPermissionView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor].active = YES;
+    [_askForPermissionView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor].active = YES;
+    [_askForPermissionView.heightAnchor constraintEqualToConstant:120.f].active = YES;
+    
+    [askForPermissionTitleLabel.topAnchor constraintEqualToAnchor:_askForPermissionView.topAnchor].active = YES;
+    [askForPermissionTitleLabel.centerXAnchor constraintEqualToAnchor:_askForPermissionView.centerXAnchor].active = YES;
+    
+    [askForPermissionDescriptionLabel.topAnchor constraintEqualToAnchor:askForPermissionTitleLabel.bottomAnchor constant:5.f].active = YES;
+    [askForPermissionDescriptionLabel.centerXAnchor constraintEqualToAnchor:_askForPermissionView.centerXAnchor].active = YES;
+    [askForPermissionDescriptionLabel.widthAnchor constraintEqualToAnchor:_askForPermissionView.widthAnchor].active = YES;
+    
+    [enableCameraAccessButton.bottomAnchor constraintEqualToAnchor:_askForPermissionView.bottomAnchor].active = YES;
+    [enableCameraAccessButton.centerXAnchor constraintEqualToAnchor:_askForPermissionView.centerXAnchor].active = YES;
 }
 
 - (void)setupCamera {
@@ -67,6 +113,21 @@
     _camera.defaultFPS = 30;
     _camera.grayscaleMode = NO;
     _camera.delegate = self;
+}
+
+- (void)startCameraIfNeeded {
+    AVAuthorizationStatus authorizationStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    if (authorizationStatus == AVAuthorizationStatusNotDetermined ||
+        authorizationStatus == AVAuthorizationStatusAuthorized) {
+        [_camera start];
+    }
+}
+
+- (void)openSettings {
+    NSURL *settingURL = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+    if ([[UIApplication sharedApplication] canOpenURL:settingURL]) {
+        [[UIApplication sharedApplication] openURL:settingURL options:@{} completionHandler:nil];
+    }
 }
 
 #pragma mark - CvVideoCameraDelegate
