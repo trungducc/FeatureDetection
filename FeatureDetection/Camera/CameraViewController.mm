@@ -8,8 +8,10 @@
 
 #import "CameraViewController.h"
 
-#import <opencv2/videoio/cap_ios.h>
 #import <AVFoundation/AVFoundation.h>
+#import <opencv2/videoio/cap_ios.h>
+#import <opencv2/features2d/features2d.hpp>
+#import <opencv2/imgproc/imgproc.hpp>
 
 @interface CameraViewController () <CvVideoCameraDelegate>
 
@@ -140,7 +142,17 @@
 #pragma mark - CvVideoCameraDelegate
 
 - (void)processImage:(cv::Mat&)image {
+    cv::Ptr<cv::Feature2D> detector = cv::FastFeatureDetector::create();
+    std::vector<cv::KeyPoint> keypoints;
+    detector->detect(image, keypoints);
     
+    if (keypoints.size() > 0) {
+        // Somehow, I can't use image directly in |cv::drawKeypoints| as an input but
+        // convert image to rgb space resolve problem
+        cv::Mat tmp;
+        cvtColor(image, tmp, CV_BGRA2RGB);
+        cv::drawKeypoints(tmp, keypoints, image);
+    }
 }
 
 @end
