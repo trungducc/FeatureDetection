@@ -13,11 +13,16 @@
 #import <opencv2/features2d/features2d.hpp>
 #import <opencv2/imgproc/imgproc.hpp>
 
+const CGFloat kFeatureDetectionThreshold = 7000;
+
 @interface CameraViewController () <CvVideoCameraDelegate>
 
 // The view which is displayed while camera permission is denied. Gives user chance to go to
 // setting and turn the permission on directly from application.
 @property (nonatomic, strong) UIView *askForPermissionView;
+
+// The image view which is displayed when the number of features is greater than |kFeatureDetectionThreshold|.
+@property (nonatomic, strong) UIImageView *cueImageView;
 
 // The view presents live preview of the camera.
 @property (nonatomic, strong) UIImageView *renderTarget;
@@ -90,6 +95,12 @@
     _renderTarget.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_renderTarget];
     
+    UIImage *cueImage = [UIImage imageNamed:@"ok"];
+    _cueImageView = [[UIImageView alloc] initWithImage:cueImage];
+    _cueImageView.translatesAutoresizingMaskIntoConstraints = NO;
+    _cueImageView.hidden = YES;
+    [self.view addSubview:_cueImageView];
+    
     // Update constraints
 
     [_askForPermissionView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor].active = YES;
@@ -106,6 +117,11 @@
     
     [enableCameraAccessButton.bottomAnchor constraintEqualToAnchor:_askForPermissionView.bottomAnchor].active = YES;
     [enableCameraAccessButton.centerXAnchor constraintEqualToAnchor:_askForPermissionView.centerXAnchor].active = YES;
+    
+    [_cueImageView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.3f].active = YES;
+    [_cueImageView.heightAnchor constraintEqualToAnchor:self.view.heightAnchor multiplier:0.3f].active = YES;
+    [_cueImageView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-8.f].active = YES;
+    [_cueImageView.topAnchor constraintEqualToAnchor:self.view.topAnchor constant:44.f].active = YES;
 }
 
 - (void)setupCamera {
@@ -142,17 +158,25 @@
 #pragma mark - CvVideoCameraDelegate
 
 - (void)processImage:(cv::Mat&)image {
+    // Creates detector and detects keypoints from |image|
     cv::Ptr<cv::Feature2D> detector = cv::FastFeatureDetector::create();
     std::vector<cv::KeyPoint> keypoints;
     detector->detect(image, keypoints);
     
-    if (keypoints.size() > 0) {
-        // Somehow, I can't use image directly in |cv::drawKeypoints| as an input but
-        // convert image to rgb space resolve problem
-        cv::Mat tmp;
-        cvtColor(image, tmp, CV_BGRA2RGB);
-        cv::drawKeypoints(tmp, keypoints, image);
+    // Does nothing if there is no detected keypoint
+    if (keypoints.size() == 0) {
+        return;
     }
+    
+    // Draws keypoints on |image|
+    cv::Mat rbgImage;
+    cvtColor(image, rbgImage, CV_BGRA2RGB);
+    cv::drawKeypoints(rbgImage, keypoints, image);
+    
+    // Shows |cueImageView| if needed
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.cueImageView.hidden = keypoints.size() <= kFeatureDetectionThreshold;
+    });
 }
 
 @end
