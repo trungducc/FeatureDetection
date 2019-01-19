@@ -30,6 +30,9 @@ const CGFloat kFeatureDetectionThreshold = 7000;
 // The object which receives input from device camera and renders on |renderTarget|.
 @property (nonatomic, strong) CvVideoCamera *camera;
 
+// Detector which is used to detect features from images
+@property (nonatomic, assign) cv::Ptr<cv::Feature2D> detector;
+
 // Creates and adds subviews.
 - (void)setupSubviews;
 
@@ -51,6 +54,7 @@ const CGFloat kFeatureDetectionThreshold = 7000;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    [self setupDetector];
     [self setupSubviews];
     [self setupCamera];
 }
@@ -59,6 +63,10 @@ const CGFloat kFeatureDetectionThreshold = 7000;
     [super viewDidAppear:animated];
     
     [self startCameraIfNeeded];
+}
+
+- (void)setupDetector {
+    _detector = cv::FastFeatureDetector::create();
 }
 
 - (void)setupSubviews {
@@ -159,9 +167,8 @@ const CGFloat kFeatureDetectionThreshold = 7000;
 
 - (void)processImage:(cv::Mat&)image {
     // Creates detector and detects keypoints from |image|
-    cv::Ptr<cv::Feature2D> detector = cv::FastFeatureDetector::create();
     std::vector<cv::KeyPoint> keypoints;
-    detector->detect(image, keypoints);
+    _detector->detect(image, keypoints);
     
     // Does nothing if there is no detected keypoint
     if (keypoints.size() == 0) {
