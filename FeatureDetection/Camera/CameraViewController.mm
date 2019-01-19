@@ -13,9 +13,12 @@
 #import <opencv2/features2d/features2d.hpp>
 #import <opencv2/imgproc/imgproc.hpp>
 
-const CGFloat kFeatureDetectionThreshold = 7000;
+#import "CameraController.h"
+#import "UIImage+OpenCV.h"
 
-@interface CameraViewController () <CvVideoCameraDelegate>
+const CGFloat kFeatureDetectionThreshold = 3000;
+
+@interface CameraViewController () <CameraControllerDelegate>
 
 // The view which is displayed while camera permission is denied. Gives user chance to go to
 // setting and turn the permission on directly from application.
@@ -27,8 +30,11 @@ const CGFloat kFeatureDetectionThreshold = 7000;
 // The view presents live preview of the camera.
 @property (nonatomic, strong) UIImageView *renderTarget;
 
-// The object which receives input from device camera and renders on |renderTarget|.
-@property (nonatomic, strong) CvVideoCamera *camera;
+// The CameraController managing the camera connection.
+@property (nonatomic, strong) CameraController *cameraController;
+
+// Detector which is used to detect features from images
+@property (nonatomic, assign) cv::Ptr<cv::Feature2D> detector;
 
 // Creates and adds subviews.
 - (void)setupSubviews;
@@ -36,10 +42,6 @@ const CGFloat kFeatureDetectionThreshold = 7000;
 // Initializes |camera| and uses |renderTarget| as a target for rendering from camera each frame.
 // |renderTarget| must be initialized before calling this method.
 - (void)setupCamera;
-
-// Start the camera if permission granted or ask for permission if it's not determined. Does nothing
-// if camera is recording.
-- (void)startCameraIfNeeded;
 
 // Allows the user to go to Feature Detection's settings
 - (void)openSettings;
@@ -51,14 +53,23 @@ const CGFloat kFeatureDetectionThreshold = 7000;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    [self setupDetector];
     [self setupSubviews];
     [self setupCamera];
 }
 
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-    
-    [self startCameraIfNeeded];
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [_cameraController startRecording];
+}
+
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    [_cameraController stopRecording];
+}
+
+- (void)setupDetector {
+    _detector = cv::FastFeatureDetector::create();
 }
 
 - (void)setupSubviews {
@@ -125,26 +136,20 @@ const CGFloat kFeatureDetectionThreshold = 7000;
 }
 
 - (void)setupCamera {
-    _camera = [[CvVideoCamera alloc] initWithParentView:_renderTarget];
-    _camera.defaultAVCaptureDevicePosition = AVCaptureDevicePositionBack;
-    _camera.defaultAVCaptureSessionPreset = AVCaptureSessionPresetHigh;
-    _camera.defaultAVCaptureVideoOrientation = AVCaptureVideoOrientationPortrait;
-    _camera.defaultFPS = 30;
-    _camera.grayscaleMode = NO;
-    _camera.delegate = self;
+    assert(_renderTarget);
     
-    [self startCameraIfNeeded];
-}
-
-- (void)startCameraIfNeeded {
-    if (_camera.recordVideo) {
-        return;
-    }
-    
-    AVAuthorizationStatus authorizationStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-    if (authorizationStatus == AVAuthorizationStatusNotDetermined ||
-        authorizationStatus == AVAuthorizationStatusAuthorized) {
-        [_camera start];
+    _cameraController = [[CameraController alloc] initWithDelegate:self];
+    switch (_cameraController.authorizationStatus) {
+        case AVAuthorizationStatusNotDetermined:
+            [_cameraController requestAuthorizationAndLoadCaptureSession];
+            break;
+        case AVAuthorizationStatusAuthorized:
+            [_cameraController loadCaptureSession];
+            break;
+        case AVAuthorizationStatusRestricted:
+        case AVAuthorizationStatusDenied:
+            _renderTarget.hidden = YES;
+            break;
     }
 }
 
@@ -155,26 +160,26 @@ const CGFloat kFeatureDetectionThreshold = 7000;
     }
 }
 
-#pragma mark - CvVideoCameraDelegate
+#pragma mark - CameraControllerDelegate
 
-- (void)processImage:(cv::Mat&)image {
-    // Creates detector and detects keypoints from |image|
-    cv::Ptr<cv::Feature2D> detector = cv::FastFeatureDetector::create();
+- (void)captureOutput:(AVCaptureOutput *)output didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
+    // Create a cv::Mat from |pixelBuffer|
+    UIImage *image = [UIImage imageFromSampleBuffer:sampleBuffer];
+    cv::Mat mat = image.cvMat;
+
+    // Detects keypoints from |image|
     std::vector<cv::KeyPoint> keypoints;
-    detector->detect(image, keypoints);
+    _detector->detect(mat, keypoints);
     
-    // Does nothing if there is no detected keypoint
-    if (keypoints.size() == 0) {
-        return;
-    }
-    
-    // Draws keypoints on |image|
-    cv::Mat rbgImage;
-    cvtColor(image, rbgImage, CV_BGRA2RGB);
-    cv::drawKeypoints(rbgImage, keypoints, image);
-    
-    // Shows |cueImageView| if needed
+    // Draw keypoints on mat
+    cv::Mat rbgMat;
+    cvtColor(mat, rbgMat, CV_BGRA2BGR);
+    cv::drawKeypoints(rbgMat, keypoints, mat);
+
+    // Updates camera preview and shows  |cueImageView| if needed
+    image = [UIImage UIImageFromCVMat:mat];
     dispatch_async(dispatch_get_main_queue(), ^{
+        self.renderTarget.image = image;
         self.cueImageView.hidden = keypoints.size() <= kFeatureDetectionThreshold;
     });
 }

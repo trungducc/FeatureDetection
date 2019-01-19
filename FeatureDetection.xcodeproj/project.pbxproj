@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9479B2FE21F359BA00415E70 /* CameraController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9479B2FD21F359BA00415E70 /* CameraController.mm */; };
+		9479B30921F3874100415E70 /* UIImage+OpenCV.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9479B30821F3874100415E70 /* UIImage+OpenCV.mm */; };
 		94CBCD2621EF6ED50018CA52 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 94CBCD2521EF6ED50018CA52 /* AppDelegate.m */; };
 		94CBCD2E21EF6ED70018CA52 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 94CBCD2D21EF6ED70018CA52 /* Assets.xcassets */; };
 		94CBCD3121EF6ED70018CA52 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 94CBCD2F21EF6ED70018CA52 /* LaunchScreen.storyboard */; };
@@ -26,6 +28,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		9479B2FC21F359BA00415E70 /* CameraController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CameraController.h; sourceTree = "<group>"; };
+		9479B2FD21F359BA00415E70 /* CameraController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CameraController.mm; sourceTree = "<group>"; };
+		9479B30721F3874100415E70 /* UIImage+OpenCV.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "UIImage+OpenCV.h"; sourceTree = "<group>"; };
+		9479B30821F3874100415E70 /* UIImage+OpenCV.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "UIImage+OpenCV.mm"; sourceTree = "<group>"; };
 		94CBCD2121EF6ED50018CA52 /* FeatureDetection.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FeatureDetection.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94CBCD2421EF6ED50018CA52 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		94CBCD2521EF6ED50018CA52 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -70,6 +76,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9479B30621F3872E00415E70 /* Categories */ = {
+			isa = PBXGroup;
+			children = (
+				9479B30721F3874100415E70 /* UIImage+OpenCV.h */,
+				9479B30821F3874100415E70 /* UIImage+OpenCV.mm */,
+			);
+			path = Categories;
+			sourceTree = "<group>";
+		};
 		94CBCD1821EF6ED50018CA52 = {
 			isa = PBXGroup;
 			children = (
@@ -92,6 +107,7 @@
 			children = (
 				94CBCD4421EF78E30018CA52 /* Systems */,
 				94CBCD3E21EF77650018CA52 /* Camera */,
+				9479B30621F3872E00415E70 /* Categories */,
 				94CBCD4221EF78660018CA52 /* Resources */,
 				94CBCD4521EF795C0018CA52 /* Supporting Files */,
 			);
@@ -121,6 +137,8 @@
 			children = (
 				94CBCD3F21EF77890018CA52 /* CameraViewController.h */,
 				94CBCD4021EF77890018CA52 /* CameraViewController.mm */,
+				9479B2FC21F359BA00415E70 /* CameraController.h */,
+				9479B2FD21F359BA00415E70 /* CameraController.mm */,
 			);
 			path = Camera;
 			sourceTree = "<group>";
@@ -222,7 +240,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				94CBCD4121EF77890018CA52 /* CameraViewController.mm in Sources */,
+				9479B30921F3874100415E70 /* UIImage+OpenCV.mm in Sources */,
 				94CBCD3421EF6ED70018CA52 /* main.m in Sources */,
+				9479B2FE21F359BA00415E70 /* CameraController.mm in Sources */,
 				94CBCD2621EF6ED50018CA52 /* AppDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
